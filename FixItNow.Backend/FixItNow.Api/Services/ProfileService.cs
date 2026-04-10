@@ -66,9 +66,12 @@ public class ProfileService : IProfileService
 
         if (!string.IsNullOrEmpty(location))
         {
+            var searchParts = location.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             workers = workers.Where(w =>
                 !string.IsNullOrEmpty(w.Location) &&
-                (w.Location.Contains(location, StringComparison.OrdinalIgnoreCase) || location.Contains(w.Location, StringComparison.OrdinalIgnoreCase))
+                searchParts.All(part => 
+                    w.Location.Contains(part, StringComparison.OrdinalIgnoreCase) || 
+                    part.Contains(w.Location, StringComparison.OrdinalIgnoreCase))
             ).ToList();
         }
 

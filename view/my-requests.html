@@ -9,8 +9,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; margin: 0; padding-top: 90px; min-height: 100vh; }
-        .page-container { max-width: 900px; margin: 0 auto; padding: 0 15px 40px; }
+        html, body { height: 100%; margin: 0; }
+        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; padding-top: 90px; display: flex; flex-direction: column; }
+        .page-container { max-width: 900px; margin: 0 auto; padding: 0 15px 40px; flex: 1 0 auto; width: 100%; }
         
         /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
@@ -39,6 +40,16 @@
 
         .footer { text-align: center; padding: 30px; color: #888; font-size: 14px; }
         @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        /* Fix modal backdrop issue */
+        .modal-backdrop {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background-color: rgba(0, 0, 0, 0.5) !important;
+            z-index: 1040 !important;
+        }
     </style>
 </head>
 <body>
@@ -136,8 +147,51 @@
     </nav>
 </main>
 
+<!-- MODAL XEM CHI TIẾT -->
+<div class="modal fade" id="requestDetailModal" tabindex="-1" aria-labelledby="requestDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 24px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.15); padding: 10px;">
+            <div class="modal-header border-0 pb-0 position-relative">
+                <h4 class="modal-title fw-bold text-dark w-100 text-center mt-3" id="requestDetailModalLabel" style="font-size: 22px;">Yêu cầu đã tạo</h4>
+                <button type="button" class="btn-close position-absolute" style="top: 20px; right: 20px; font-size: 14px;" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 p-md-5 pt-3">
+                <div class="d-flex flex-column gap-4">
+                    <!-- Họ và tên -->
+                    <div>
+                        <p class="mb-1 text-dark fw-bold" style="font-size: 15px;">Họ và tên</p>
+                        <p class="mb-0 text-dark" id="detailCustomerName" style="font-size: 16px;"></p>
+                    </div>
+
+                    <!-- Số điện thoại -->
+                    <div>
+                        <p class="mb-1 text-dark fw-bold" style="font-size: 15px;">Số điện thoại</p>
+                        <p class="mb-0 text-dark" id="detailCustomerPhone" style="font-size: 16px;"></p>
+                    </div>
+
+                    <!-- Địa chỉ -->
+                    <div>
+                        <p class="mb-1 text-dark fw-bold" style="font-size: 15px;">Địa chỉ chi tiết</p>
+                        <p class="mb-0 text-dark" id="detailAddress" style="font-size: 16px; line-height: 1.4;"></p>
+                    </div>
+
+                    <!-- Mô tả -->
+                    <div>
+                        <p class="mb-1 text-dark fw-bold" style="font-size: 15px;">Mô tả sự cố</p>
+                        <p class="mb-0 text-dark" id="detailDescription" style="font-size: 16px; line-height: 1.5; white-space: pre-wrap; background: transparent; padding: 0;"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-2 pb-4 px-4 px-md-5">
+                <button type="button" class="btn btn-secondary fw-bold px-4 rounded-pill ms-auto" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <footer class="footer">© 2026 FixItNow - Website kết nối sửa chữa dân dụng tức thời</footer>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/main.js"></script>
 <script src="js/my-requests.js"></script>

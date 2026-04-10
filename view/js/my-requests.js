@@ -131,14 +131,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 : `<span class="fst-italic text-muted">Chưa phân công</span>`;
 
             let actionsHtml = '';
+            
+            // Nút Xem chi tiết (có mặt ở mọi trạng thái)
+            const btnDetail = `<button class="btn btn-outline-success btn-sm rounded-pill px-4 fw-bold btn-view-detail" data-id="${req.id}" style="margin-right: 8px;">Xem chi tiết</button>`;
+
             if (req.status === 0) {
-                actionsHtml = `<button class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold btn-cancel" data-id="${req.id}">Huỷ yêu cầu</button>`;
+                actionsHtml = btnDetail + `<button class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold btn-cancel" data-id="${req.id}">Huỷ yêu cầu</button>`;
             } else if (req.status === 2) {
                 if (reviewedSet.has(req.id)) {
-                    actionsHtml = `<span class="badge bg-light text-success border border-success rounded-pill px-3 py-2 fw-bold"><i class="fa-solid fa-circle-check me-1"></i>Đã đánh giá</span>`;
+                    actionsHtml = btnDetail + `<span class="badge bg-light text-success border border-success rounded-pill px-3 py-2 fw-bold"><i class="fa-solid fa-circle-check me-1"></i>Đã đánh giá</span>`;
                 } else {
-                    actionsHtml = `<a href="review.html?requestId=${req.id}&workerId=${req.workerId}" class="btn btn-warning btn-sm rounded-pill px-4 fw-bold text-white">Đánh giá</a>`;
+                    actionsHtml = btnDetail + `<a href="review.html?requestId=${req.id}&workerId=${req.workerId}" class="btn btn-warning btn-sm rounded-pill px-4 fw-bold text-white">Đánh giá</a>`;
                 }
+            } else {
+                actionsHtml = btnDetail;
             }
 
             return `
@@ -180,6 +186,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                     confirmed = confirm('Bạn có chắc muốn huỷ yêu cầu này?');
                 }
                 if (confirmed) await cancelRequest(id);
+            });
+        });
+        
+        // Modal logic
+        const detailModalEl = document.getElementById('requestDetailModal');
+        let detailModal;
+        if (detailModalEl && window.bootstrap) {
+            detailModal = new bootstrap.Modal(detailModalEl);
+        }
+
+        // View detail handlers
+        document.querySelectorAll('.btn-view-detail').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(e.currentTarget.dataset.id);
+                const req = requests.find(r => r.id === id);
+                if (req) {
+                    const elName = document.getElementById('detailCustomerName');
+                    const elPhone = document.getElementById('detailCustomerPhone');
+                    const elAddress = document.getElementById('detailAddress');
+                    const elDesc = document.getElementById('detailDescription');
+                    
+                    if (elName) elName.innerText = req.customerName || 'Không có';
+                    if (elPhone) elPhone.innerText = req.customerPhone || 'Không rõ';
+                    if (elAddress) elAddress.innerText = req.address || 'Không rõ';
+                    if (elDesc) elDesc.innerText = req.description || 'Không có mô tả chi tiết';
+                    
+                    if (detailModal) detailModal.show();
+                }
             });
         });
         

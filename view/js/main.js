@@ -493,17 +493,25 @@ document.addEventListener("DOMContentLoaded", function () {
         if(!pCol) return;
         pCol.innerHTML = '';
         list.forEach(p => {
-            const div = document.createElement('div');
-            div.className = 'province-item';
-            div.textContent = p.name;
-            div.onclick = () => {
+            const lbl = document.createElement('label');
+            lbl.className = 'province-item';
+            lbl.style.display = 'flex';
+            lbl.style.alignItems = 'center';
+            lbl.style.gap = '10px';
+            lbl.style.cursor = 'pointer';
+            lbl.style.padding = '8px 12px';
+            lbl.innerHTML = `<input type="radio" name="provinceRadio" value="${p.name}"> <span>${p.name}</span>`;
+            
+            // Allow checking standard radio behavior handling
+            lbl.querySelector('input').onclick = (e) => {
+                e.stopPropagation(); // Prevent duplicate firing if needed
                 document.querySelectorAll('.province-item').forEach(el => el.classList.remove('active'));
-                div.classList.add('active');
+                lbl.classList.add('active');
                 selectedProvinceName = p.name;
                 selectedDistrictName = '';
                 renderDistricts(p.districts);
             };
-            pCol.appendChild(div);
+            pCol.appendChild(lbl);
         });
     }
 
