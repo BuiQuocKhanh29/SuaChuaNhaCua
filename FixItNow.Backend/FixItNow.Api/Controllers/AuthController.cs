@@ -64,8 +64,11 @@ public class AuthController : ControllerBase
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Phone == dto.Phone);
         
-        if (user == null || user.PasswordHash != dto.Password)
-            return Unauthorized("Số điện thoại hoặc mật khẩu không chính xác.");
+        if (user == null)
+            return Unauthorized("Tài khoản chưa có trên hệ thống, vui lòng đăng ký.");
+
+        if (user.PasswordHash != dto.Password)
+            return Unauthorized("Mật khẩu không chính xác. Vui lòng thử lại.");
 
         // Validate role explicitly
         var reqRole = dto.Role?.ToLower() == "worker" || dto.Role?.ToLower() == "repairman" ? UserRole.Worker : UserRole.Customer;

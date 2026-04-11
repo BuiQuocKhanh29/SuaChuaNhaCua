@@ -410,7 +410,6 @@ document.addEventListener("DOMContentLoaded", function () {
             categoryCheckboxes.forEach(c => { if (c.checked) selected.push(c.parentElement.textContent.trim()); });
             if (categoryText) {
                 if (selected.length === 0) categoryText.innerText = "Danh mục sửa chữa";
-                else if (selected.length === 1) categoryText.innerText = selected[0];
                 else categoryText.innerText = `Đã chọn ${selected.length} danh mục`;
             }
             closeCategoryDropdown();
@@ -558,6 +557,7 @@ document.addEventListener("DOMContentLoaded", function () {
             window.selectedProvince = '';
             window.selectedDistrict = '';
             document.querySelectorAll('.province-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('input[name="provinceRadio"], input[name="districtRadio"]').forEach(radio => radio.checked = false);
             const dCol = document.getElementById('districtColumn');
             if(dCol) dCol.innerHTML = '';
             if(locationText) locationText.textContent = 'Địa điểm';
@@ -618,86 +618,91 @@ document.addEventListener("DOMContentLoaded", function () {
             
             if (locationStr) params.append("location", locationStr);
 
-            let resultsSection = document.getElementById("searchResults");
-            if (!resultsSection) {
-                resultsSection = document.createElement("section");
-                resultsSection.id = "searchResults";
-                resultsSection.className = "search-results container mt-0 mb-4";
-                document.querySelector("main").appendChild(resultsSection);
-            }
-            resultsSection.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
-                    <h5 style="color:#2c3e50; font-weight:700;">Đang tìm kiếm thợ tốt nhất cho bạn...</h5>
-                </div>`;
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/profiles/search?${params.toString()}`);
-                const data = await res.json();
-                if (!data || data.length === 0) {
-                    resultsSection.innerHTML = `
-                        <div class="text-center py-5" style="background:white; border-radius:20px; box-shadow:0 8px 30px rgba(0,0,0,0.06);">
-                            <i class="fa-solid fa-face-frown text-muted" style="font-size:64px; margin-bottom:20px; opacity:0.5;"></i>
-                            <h4 style="color:#2c3e50; font-weight:800;">Không tìm thấy thợ phù hợp</h4>
-                            <p style="color:#777; font-size:16px;">Vui lòng thử chọn danh mục hoặc địa điểm khác.</p>
-                        </div>`;
-                    return;
-                }
-
-                await Promise.all(data.map(async (worker) => {
-                    try {
-                        const rRes = await fetch(`${API_BASE_URL}/api/reviews/worker/${worker.id}`);
-                        if (rRes.ok) {
-                            const rData = await rRes.json();
-                            worker.displayRating = rData.averageRating != null ? parseFloat(rData.averageRating) : (worker.rating || 0);
-                        } else worker.displayRating = worker.rating || 0;
-                    } catch { worker.displayRating = worker.rating || 0; }
-                }));
-
-                searchWorkers = data;
-                resultsSection.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2">
-                        <div>
-                            <h2 style="font-weight:800; color:#2c3e50; margin:0; font-size:22px;"><i class="fa-solid fa-users text-success me-2"></i> Danh sách thợ phù hợp</h2>
-                            <p style="color:#666; font-size:14px; margin:4px 0 0 0;">Tìm thấy <strong>${data.length}</strong> thợ dựa trên lựa chọn của bạn</p>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between align-items-center mb-2 bg-white p-2 px-3 rounded-3 shadow-sm">
-                        <label style="cursor:pointer; font-weight:700; color:#2c3e50; display:flex; align-items:center; gap:10px; font-size:14px;">
-                            <input type="checkbox" id="selectAllWorkers" style="width:18px; height:18px;"> Chọn tất cả thợ
-                        </label>
-                        <span id="selectedCount" style="font-weight:700; color:#e67e22; font-size:14px;"></span>
-                    </div>
-                    
-                    <div class="row g-3" id="resultsGrid"></div>
-                    <div id="searchPagination" class="mt-3 d-flex justify-content-center"></div>
-                `;
-                
-                let fab = document.getElementById("multiSelectFab");
-                if (!fab) {
-                    fab = document.createElement("button");
-                    fab.id = "multiSelectFab";
-                    fab.style.cssText = "position:fixed; bottom:40px; right:40px; background:linear-gradient(135deg, #4e7d63, #3a9d6e); color:#fff; border:none; padding:16px 32px; border-radius:50px; font-weight:800; font-size:16px; z-index:9990; display:none; box-shadow:0 10px 30px rgba(78,125,99,0.4); transition:all 0.3s; cursor:pointer;";
-                    fab.onmouseover = () => fab.style.transform = "translateY(-3px)";
-                    fab.onmouseout = () => fab.style.transform = "none";
-                    fab.onclick = () => window.location.href = `create-request.html?workers=${Array.from(selectedWorkerIds).join(",")}`;
-                    document.body.appendChild(fab);
-                }
-
-                document.getElementById("selectAllWorkers")?.addEventListener("change", function() {
-                    document.querySelectorAll(".worker-select-cb").forEach(cb => {
-                        cb.checked = this.checked;
-                        if (this.checked) selectedWorkerIds.add(cb.dataset.workerId); else selectedWorkerIds.delete(cb.dataset.workerId);
-                    });
-                    updateSelectedCount();
-                });
-
-                renderSearchPage(1);
-            } catch (err) {
-                resultsSection.innerHTML = `<div class="alert alert-danger text-center">Lỗi kết nối máy chủ.</div>`;
-            }
+            sessionStorage.setItem("lastSearchQuery", params.toString());
+            await executeSearch(params.toString());
         });
+    }
+
+    async function executeSearch(queryStr) {
+        let resultsSection = document.getElementById("searchResults");
+        if (!resultsSection) {
+            resultsSection = document.createElement("section");
+            resultsSection.id = "searchResults";
+            resultsSection.className = "search-results container mt-0 mb-4";
+            document.querySelector("main").appendChild(resultsSection);
+        }
+        resultsSection.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                <h5 style="color:#2c3e50; font-weight:700;">Đang tìm kiếm thợ tốt nhất cho bạn...</h5>
+            </div>`;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/profiles/search?${queryStr}`);
+            const data = await res.json();
+            if (!data || data.length === 0) {
+                resultsSection.innerHTML = `
+                    <div class="text-center py-5" style="background:white; border-radius:20px; box-shadow:0 8px 30px rgba(0,0,0,0.06);">
+                        <i class="fa-solid fa-face-frown text-muted" style="font-size:64px; margin-bottom:20px; opacity:0.5;"></i>
+                        <h4 style="color:#2c3e50; font-weight:800;">Không tìm thấy thợ phù hợp</h4>
+                        <p style="color:#777; font-size:16px;">Vui lòng thử chọn danh mục hoặc địa điểm khác.</p>
+                    </div>`;
+                return;
+            }
+
+            await Promise.all(data.map(async (worker) => {
+                try {
+                    const rRes = await fetch(`${API_BASE_URL}/api/reviews/worker/${worker.id}`);
+                    if (rRes.ok) {
+                        const rData = await rRes.json();
+                        worker.displayRating = rData.averageRating != null ? parseFloat(rData.averageRating) : (worker.rating || 0);
+                    } else worker.displayRating = worker.rating || 0;
+                } catch { worker.displayRating = worker.rating || 0; }
+            }));
+
+            searchWorkers = data;
+            resultsSection.innerHTML = `
+                <div class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2">
+                    <div>
+                        <h2 style="font-weight:800; color:#2c3e50; margin:0; font-size:22px;"><i class="fa-solid fa-users text-success me-2"></i> Danh sách thợ phù hợp</h2>
+                        <p style="color:#666; font-size:14px; margin:4px 0 0 0;">Tìm thấy <strong>${data.length}</strong> thợ dựa trên lựa chọn của bạn</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-2 bg-white p-2 px-3 rounded-3 shadow-sm">
+                    <label style="cursor:pointer; font-weight:700; color:#2c3e50; display:flex; align-items:center; gap:10px; font-size:14px;">
+                        <input type="checkbox" id="selectAllWorkers" style="width:18px; height:18px;"> Chọn tất cả thợ
+                    </label>
+                    <span id="selectedCount" style="font-weight:700; color:#e67e22; font-size:14px;"></span>
+                </div>
+                
+                <div class="row g-3" id="resultsGrid"></div>
+                <div id="searchPagination" class="mt-3 d-flex justify-content-center"></div>
+            `;
+            
+            let fab = document.getElementById("multiSelectFab");
+            if (!fab) {
+                fab = document.createElement("button");
+                fab.id = "multiSelectFab";
+                fab.style.cssText = "position:fixed; bottom:40px; right:40px; background:linear-gradient(135deg, #4e7d63, #3a9d6e); color:#fff; border:none; padding:16px 32px; border-radius:50px; font-weight:800; font-size:16px; z-index:9990; display:none; box-shadow:0 10px 30px rgba(78,125,99,0.4); transition:all 0.3s; cursor:pointer;";
+                fab.onmouseover = () => fab.style.transform = "translateY(-3px)";
+                fab.onmouseout = () => fab.style.transform = "none";
+                fab.onclick = () => window.location.href = `create-request.html?workers=${Array.from(selectedWorkerIds).join(",")}`;
+                document.body.appendChild(fab);
+            }
+
+            document.getElementById("selectAllWorkers")?.addEventListener("change", function() {
+                document.querySelectorAll(".worker-select-cb").forEach(cb => {
+                    cb.checked = this.checked;
+                    if (this.checked) selectedWorkerIds.add(cb.dataset.workerId); else selectedWorkerIds.delete(cb.dataset.workerId);
+                });
+                updateSelectedCount();
+            });
+
+            renderSearchPage(1);
+        } catch (err) {
+            resultsSection.innerHTML = `<div class="alert alert-danger text-center">Lỗi kết nối máy chủ.</div>`;
+        }
     }
 
     function renderSearchPage(page) {
@@ -837,4 +842,21 @@ document.addEventListener("DOMContentLoaded", function () {
         checkUnread();
         setInterval(checkUnread, 30000);
     })();
+    // === AUTO-RESTORE SEARCH RESULTS ===
+    // When returning from worker-detail.html with ?restoreSearch=true,
+    // automatically re-execute the last search query.
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("restoreSearch") === "true") {
+        const savedQuery = sessionStorage.getItem("lastSearchQuery");
+        if (savedQuery !== null) {
+            // Clean up the URL so it doesn't stay ugly
+            window.history.replaceState({}, document.title, window.location.pathname);
+            executeSearch(savedQuery).then(() => {
+                setTimeout(() => {
+                    const r = document.getElementById("searchResults");
+                    if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 300);
+            });
+        }
+    }
 });

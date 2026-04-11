@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const roleTabs = document.querySelectorAll('.role-tab');
+    const phoneInput = document.getElementById('phone');
     let currentRole = 'Customer';
 
     roleTabs.forEach(tab => {
@@ -11,11 +12,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Chỉ cho phép nhập số, tối đa 10 ký tự
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+        });
+    }
+
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const phone = document.getElementById('phone').value;
+        const phone = phoneInput.value.trim();
         const password = document.getElementById('password').value;
         const loginError = document.getElementById('loginError');
+
+        // Validate phía client
+        if (phone.length !== 10 || !/^[0-9]{10}$/.test(phone)) {
+            loginError.textContent = 'Số điện thoại phải bao gồm đúng 10 chữ số.';
+            loginError.style.display = 'block';
+            return;
+        }
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/Auth/login`, {
@@ -28,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 sessionStorage.setItem('isLoggedIn', 'true');
                 sessionStorage.setItem('userPhone', phone);
-                sessionStorage.setItem("userRole", currentRole); // Changed from currentRole to currentRole (was 'role' in instruction, but currentRole is the variable)
+                sessionStorage.setItem("userRole", currentRole);
                 sessionStorage.setItem('fullName', data.fullName || 'Người dùng');
                 
                 if (data.workerProfileId) {
@@ -45,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     sessionStorage.setItem('userAvatar', fullUrl);
                 }
 
-                if (currentRole === "Repairman") { // Used currentRole for conditional redirect
+                if (currentRole === "Repairman") {
                     window.location.href = "worker-dashboard.html";
                 } else {
                     window.location.href = "index.html";
@@ -57,7 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error(error);
-            alert('Lỗi kết nối máy chủ.');
+            loginError.textContent = 'Lỗi kết nối máy chủ. Vui lòng thử lại sau.';
+            loginError.style.display = 'block';
         }
     });
 });

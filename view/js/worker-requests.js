@@ -426,4 +426,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     fetchRequests();
+    // Auto-refresh danh sách yêu cầu mỗi 3 giây
+    setInterval(fetchRequests, 3000);
 });

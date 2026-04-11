@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         modal.innerHTML = `
             <div style="font-size: 60px; margin-bottom: 15px;"><i class="fa-solid fa-handshake text-primary"></i></div>
             <h3 style="font-weight: 800; color: #222; margin-bottom: 10px;">Yêu cầu Đăng nhập</h3>
-            <p style="color: #666; font-size: 15px; margin-bottom: 25px; line-height: 1.5;">Vui lòng đăng nhập với tư cách Người dùng để có thể tiến hành đặt thợ sửa chữa.</p>
+            <p style="color: #666; font-size: 15px; margin-bottom: 25px; line-height: 1.5;">Vui lòng đăng nhập để tìm kiếm và đặt thợ sửa chữa.</p>
             <button id="modalLoginBtn" style="background: #4e7d63; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.3s; width: 100%; box-shadow: 0 6px 15px rgba(78, 125, 99, 0.2);">Đăng nhập ngay</button>
         `;
         

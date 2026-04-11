@@ -25,6 +25,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (btnRemoveAvatar) {
         btnRemoveAvatar.addEventListener("click", () => {
+            const currentSrc = avatarPreview ? avatarPreview.src : "";
+            if (!currentSrc || currentSrc.endsWith("assets/images/user.png") || currentSrc.endsWith("user.png")) {
+                showModal("Bạn chưa tải ảnh đại diện lên. Không có ảnh để xóa.", "warning");
+                return;
+            }
             if (confirm("Chắc chắn xóa ảnh đại diện?")) {
                 avatarInput.value = "";
                 if (avatarPreview) avatarPreview.src = "assets/images/user.png";
@@ -259,11 +264,11 @@ document.addEventListener("DOMContentLoaded", function () {
             const nameRegex = /^[\p{L}\s0-9]+$/u;
 
             if (nameVal === "") {
-                if (nameError) { nameError.textContent = "Tên không được bỏ trống."; nameError.style.display = "block"; }
+                if (nameError) { nameError.textContent = "Tên không được bỏ trống. Vui lòng nhập lại."; nameError.style.display = "block"; }
                 return;
             }
             if (!nameRegex.test(nameVal)) {
-                if (nameError) { nameError.textContent = "Tên không được chứa ký tự đặc biệt."; nameError.style.display = "block"; }
+                if (nameError) { nameError.textContent = "Tên không được chứa ký tự đặc biệt. Vui lòng nhập lại."; nameError.style.display = "block"; }
                 return;
             }
             if (nameError) nameError.style.display = "none";
@@ -364,7 +369,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     const usernameEl = document.getElementById("username");
                     if (usernameEl) usernameEl.textContent = newName;
 
-                    showModal("Cập nhật thông tin thành công!", "success");
+                    showModal("Cập nhật thông tin thành công.", "success");
                     loadProfile();
                 } else {
                     alert("Lưu thất bại. Vui lòng thử lại.");

@@ -281,7 +281,11 @@ public class RepairRequestsController : ControllerBase
 
         // ====== BẢO MẬT: Kiểm tra trạng thái trước (nhanh, tránh query thừa) ======
         if (request.Status != RequestStatus.Pending)
-            return BadRequest(new { message = "Yêu cầu này đã được xử lý bởi thợ khác" });
+        {
+            if (request.Status == RequestStatus.Cancelled)
+                return BadRequest(new { message = "Yêu cầu này đã bị khách hàng hủy." });
+            return BadRequest(new { message = "Yêu cầu này đã được xử lý bởi thợ khác." });
+        }
 
         // Xác định thông tin thợ nhận
         int assignedWorkerId = request.WorkerId ?? 0;
@@ -372,6 +376,45 @@ public class RepairRequestsController : ControllerBase
             if (request.IsBroadcast && workerId.HasValue)
             {
                 request.RejectedWorkerIds = CsvHelper.CsvAdd(request.RejectedWorkerIds, workerId.Value);
+
+                // ====== KIỂM TRA: Tất cả thợ phù hợp đã từ chối? ======
+                // Lấy danh sách tất cả thợ đủ điều kiện (cùng tỉnh + cùng dịch vụ)
+                var reqProvince = request.Address.Split(',').Last().Trim()
+                    .Replace("Thành phố ", "")
+                    .Replace("TP ", "")
+                    .Replace("Tỉnh ", "")
+                    .Trim();
+
+                var eligibleProfiles = await _context.WorkerProfiles
+                    .Where(wp => wp.IsActive && wp.Location.Contains(reqProvince))
+                    .ToListAsync();
+
+                var eligibleProfileIds = eligibleProfiles
+                    .Where(wp => wp.Services != null && wp.Services.Any(s =>
+                        s.Contains(request.Category, StringComparison.OrdinalIgnoreCase) ||
+                        request.Category.Contains(s, StringComparison.OrdinalIgnoreCase)))
+                    .Select(wp => wp.Id)
+                    .ToList();
+
+                // Kiểm tra xem tất cả thợ đủ điều kiện đã từ chối chưa
+                bool allRejected = eligibleProfileIds.Count > 0 &&
+                    eligibleProfileIds.All(pid => CsvHelper.CsvContains(request.RejectedWorkerIds, pid));
+
+                if (allRejected)
+                {
+                    request.Status = RequestStatus.Cancelled;
+                    request.UpdatedAt = DateTime.Now;
+
+                    _context.Notifications.Add(new Notification
+                    {
+                        UserPhone = request.CustomerPhone,
+                        Title = "❌ Không có thợ nhận yêu cầu",
+                        Message = $"Rất tiếc, tất cả thợ trong khu vực đã từ chối yêu cầu \"{request.Category}\". Vui lòng thử lại sau.",
+                        Type = "all_rejected",
+                        RelatedRequestId = request.Id,
+                        CreatedAt = DateTime.Now
+                    });
+                }
             }
         }
         else 

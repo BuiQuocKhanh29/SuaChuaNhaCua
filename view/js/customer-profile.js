@@ -34,6 +34,11 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (btnRemoveAvatar) {
         btnRemoveAvatar.addEventListener("click", () => {
+            const currentSrc = avatarPreview ? avatarPreview.src : "";
+            if (!currentSrc || currentSrc.endsWith("assets/images/user.png") || currentSrc.endsWith("user.png")) {
+                alert("Bạn chưa tải ảnh đại diện lên. Không có ảnh để xóa.");
+                return;
+            }
             if (confirm("Chắc chắn xóa ảnh đại diện?")) {
                 avatarInput.value = "";
                 if (avatarPreview) avatarPreview.src = "assets/images/user.png";
@@ -119,8 +124,14 @@ document.addEventListener("DOMContentLoaded", async function () {
         e.preventDefault();
         
         const newName = fullNameInput.value.trim();
-        if (!newName) {
-            alert("Vui lòng nhập họ tên.");
+        const nameRegex = /^[\p{L}\s0-9]+$/u;
+
+        if (newName === "") {
+            alert("Tên không được bỏ trống. Vui lòng nhập lại.");
+            return;
+        }
+        if (!nameRegex.test(newName)) {
+            alert("Tên không được chứa ký tự đặc biệt. Vui lòng nhập lại.");
             return;
         }
 
@@ -191,7 +202,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             const usernameEl = document.getElementById("username");
             if (usernameEl) usernameEl.textContent = newName;
 
-            alert("Cập nhật thông tin thành công!");
+            alert("Cập nhật thông tin thành công.");
             
         } catch (error) {
             console.error(error);
