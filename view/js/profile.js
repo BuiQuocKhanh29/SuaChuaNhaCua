@@ -261,7 +261,7 @@ document.addEventListener("DOMContentLoaded", function () {
             e.preventDefault();
 
             const nameVal = inputName ? inputName.value.trim() : "";
-            const nameRegex = /^[\p{L}\s0-9]+$/u;
+            const nameRegex = /^[\p{L}\s]+$/u;
 
             if (nameVal === "") {
                 if (nameError) { nameError.textContent = "Tên không được bỏ trống. Vui lòng nhập lại."; nameError.style.display = "block"; }
@@ -272,6 +272,23 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
             if (nameError) nameError.style.display = "none";
+
+            // Validate Tỉnh/Thành phố
+            if (!provinceSelect.value) {
+                showModal("Tỉnh/Thành phố không được bỏ trống. Vui lòng chọn.", "warning");
+                return;
+            }
+            // Validate Quận/Huyện
+            if (!districtSelect.value) {
+                showModal("Quận/Huyện không được bỏ trống. Vui lòng chọn.", "warning");
+                return;
+            }
+            // Validate Dịch vụ cung cấp
+            const checkedServices = document.querySelectorAll(".service:checked");
+            if (checkedServices.length === 0) {
+                showModal("Dịch vụ cung cấp không được bỏ trống. Vui lòng chọn.", "warning");
+                return;
+            }
 
             // Build address and location from selectors
             const provText = provinceSelect.options[provinceSelect.selectedIndex]?.text || '';

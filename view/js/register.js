@@ -161,6 +161,22 @@ document.addEventListener('DOMContentLoaded', () => {
             role: currentRole
         };
 
+        // For Repairman: validate required fields
+        if (currentRole === 'Repairman') {
+            if (!categorySelect.value) {
+                alert("Kỹ năng không được bỏ trống. Vui lòng chọn.");
+                return;
+            }
+            if (!provinceSelect.value) {
+                alert("Tỉnh/Thành phố không được bỏ trống. Vui lòng chọn.");
+                return;
+            }
+            if (!districtSelect.value) {
+                alert("Quận/Huyện không được bỏ trống. Vui lòng chọn.");
+                return;
+            }
+        }
+
         // For Repairman: include address and category
         if (currentRole === 'Repairman') {
             payload.category = categorySelect.value || null;

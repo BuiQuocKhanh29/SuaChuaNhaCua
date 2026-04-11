@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         e.preventDefault();
         
         const newName = fullNameInput.value.trim();
-        const nameRegex = /^[\p{L}\s0-9]+$/u;
+        const nameRegex = /^[\p{L}\s]+$/u;
 
         if (newName === "") {
             alert("Tên không được bỏ trống. Vui lòng nhập lại.");

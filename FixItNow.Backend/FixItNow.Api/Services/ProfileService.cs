@@ -43,6 +43,15 @@ public class ProfileService : IProfileService
         // profile.Rating = request.Rating;  // ĐÃ XÓA ĐỂ CHỐNG GIẢ MẠO ĐIỂM
 
         await _context.SaveChangesAsync();
+
+        // Đồng bộ tên sang bảng Users để login trả về tên mới nhất
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.WorkerProfileId == id);
+        if (user != null && user.FullName != profile.NameOrStore)
+        {
+            user.FullName = profile.NameOrStore;
+            await _context.SaveChangesAsync();
+        }
+
         return profile;
     }
 
