@@ -859,6 +859,35 @@ document.addEventListener("DOMContentLoaded", function () {
     if (urlParams.get("restoreSearch") === "true") {
         const savedQuery = sessionStorage.getItem("lastSearchQuery");
         if (savedQuery !== null) {
+            const parsed = new URLSearchParams(savedQuery);
+            
+            // 1. Phục hồi giao diện danh mục
+            const cats = parsed.get("category");
+            if (cats) {
+                const catArr = cats.split(",");
+                const checkboxes = document.querySelectorAll(".category-dropdown input[type='checkbox']");
+                let count = 0;
+                checkboxes.forEach(cb => {
+                    if (catArr.includes(cb.parentElement.textContent.trim())) {
+                        cb.checked = true;
+                        count++;
+                    }
+                });
+                const catText = document.getElementById("categoryText");
+                if (catText && count > 0) catText.innerText = `Đã chọn ${count} danh mục`;
+            }
+
+            // 2. Phục hồi giao diện địa điểm
+            const loc = parsed.get("location");
+            if (loc) {
+                const locText = document.getElementById("locationText");
+                if (locText) locText.innerText = loc;
+                
+                const parts = loc.split(",");
+                if (parts.length > 0) window.selectedProvince = parts[0].trim();
+                if (parts.length > 1) window.selectedDistrict = parts[1].trim();
+            }
+
             // Clean up the URL so it doesn't stay ugly
             window.history.replaceState({}, document.title, window.location.pathname);
             executeSearch(savedQuery).then(() => {
