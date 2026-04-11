@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${!n.isRead ? '<span class="badge bg-danger rounded-pill" style="font-size: 10px;">Mới</span>' : ''}
                 </div>
                 <p class="mb-1 text-muted small ms-4 ps-1">${n.message}</p>
-                <div class="text-muted small ms-4 ps-1"><i class="fa-regular fa-clock me-1"></i>${new Date(n.createdAt).toLocaleString('vi-VN')}</div>
+                <div class="text-muted small ms-4 ps-1"><i class="fa-regular fa-clock me-1"></i>${new Date(n.createdAt + 'Z').toLocaleString('vi-VN')}</div>
             </div>
         `).join('');
 

@@ -146,7 +146,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (broadcastInfo) broadcastInfo.style.display = "block";
     }
 
-    // Auto-select category từ URL (Quick Categories trên trang chủ)
     if (preCategory) {
         const categorySelect = document.getElementById("category");
         for (let opt of categorySelect.options) {
@@ -154,13 +153,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 opt.selected = true;
                 break;
             }
-        }
-        
-        // Fix cứng (không cho đổi) ngoại trừ Sửa vặt (tham số là "Sơn sửa nhỏ")
-        if (preCategory.toLowerCase() !== "sơn sửa nhỏ") {
-            categorySelect.disabled = true;
-            // Đổi màu nền một chút để nhận biết form bị khóa
-            categorySelect.style.backgroundColor = "#eaf3ed";
         }
     }
 

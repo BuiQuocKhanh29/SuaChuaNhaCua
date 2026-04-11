@@ -717,6 +717,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function renderWorkersList(grid, workers) {
+        // Lấy category đầu tiên đã chọn từ lần tìm kiếm (để auto-fill form tạo yêu cầu)
+        let primaryCat = "";
+        const lastQ = sessionStorage.getItem("lastSearchQuery");
+        if (lastQ) {
+            const p = new URLSearchParams(lastQ);
+            const cat = p.get("category");
+            if (cat) primaryCat = cat.split(",")[0];
+        }
+        const catParam = primaryCat ? `&category=${encodeURIComponent(primaryCat)}` : "";
+
         grid.innerHTML = "";
         workers.forEach(w => {
             const div = document.createElement("div");
@@ -762,8 +772,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     </div>
                     
                     <div class="worker-card-footer d-flex gap-2 mt-3 pt-3" style="border-top:1px solid #f0f0f0;">
-                        <a href="worker-detail.html?id=${w.id}" class="btn flex-grow-1" style="background:#f8f9fa; color:#2c3e50; border:none; padding:10px; border-radius:12px; font-weight:700; font-size:14px; transition:all 0.2s;">Xem chi tiết</a>
-                        <a href="create-request.html?workerId=${w.id}&workerName=${encodeURIComponent(w.nameOrStore || '')}" class="btn flex-grow-1" style="background:linear-gradient(135deg, #4e7d63, #3a9d6e); color:white; border:none; padding:10px; border-radius:12px; font-weight:700; font-size:14px; box-shadow:0 4px 15px rgba(78,125,99,0.3); transition:all 0.2s;">Chọn thợ</a>
+                        <a href="worker-detail.html?id=${w.id}${catParam}" class="btn flex-grow-1" style="background:#f8f9fa; color:#2c3e50; border:none; padding:10px; border-radius:12px; font-weight:700; font-size:14px; transition:all 0.2s;">Xem chi tiết</a>
+                        <a href="create-request.html?workerId=${w.id}&workerName=${encodeURIComponent(w.nameOrStore || '')}${catParam}" class="btn flex-grow-1" style="background:linear-gradient(135deg, #4e7d63, #3a9d6e); color:white; border:none; padding:10px; border-radius:12px; font-weight:700; font-size:14px; box-shadow:0 4px 15px rgba(78,125,99,0.3); transition:all 0.2s;">Chọn thợ</a>
                     </div>
                 </div>
             `;

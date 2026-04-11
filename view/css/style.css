@@ -26,9 +26,10 @@ body {
 .navbar-custom {
    background: rgba(255, 255, 255, 0.98);
    backdrop-filter: blur(10px);
-   padding: 15px 0;
+   padding: 16px 24px;
    width: 100%;
    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+   border-bottom: 1px solid #E5E7EB;
    position: fixed;
    top: 0;
    left: 0;
@@ -40,6 +41,29 @@ body {
    justify-content: space-between;
    align-items: center;
    width: 100%;
+   max-width: 1200px;
+   margin: 0 auto;
+}
+
+/* ================= HEADER SCALING (Logo & Profile/Bell) ================= */
+.logo {
+   font-weight: 800;
+   color: #4e7d63;
+   width: 45%; 
+   font-size: 2rem; /* Phóng to chữ */
+   transition: transform 0.2s ease;
+}
+
+.logo svg {
+   width: 42px !important;
+   height: 42px !important;
+}
+
+.nav-actions {
+   transform: scale(1.12);
+   transform-origin: right center;
+   display: flex;
+   align-items: center;
 }
 
 /* ================= NOTIFICATION BADGE ================= */

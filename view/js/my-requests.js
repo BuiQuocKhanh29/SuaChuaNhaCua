@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }));
 
         requestsList.innerHTML = currentItems.map(req => {
-            const dateStr = new Date(req.createdAt).toLocaleDateString('vi-VN');
+            const dateStr = new Date(req.createdAt + 'Z').toLocaleDateString('vi-VN');
             const workerHtml = req.workerName
                 ? `<span class="fw-bold text-dark">${req.workerName}</span>`
                 : `<span class="fst-italic text-muted">Chưa phân công</span>`;

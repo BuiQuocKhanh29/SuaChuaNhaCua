@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             feedbackList.innerHTML = reviews.map(rev => {
                 const name = rev.customerName || 'Khách hàng';
                 const initial = name.charAt(0).toUpperCase();
-                const dateStr = new Date(rev.createdAt).toLocaleDateString('vi-VN');
+                const dateStr = new Date(rev.createdAt + 'Z').toLocaleDateString('vi-VN');
                 return `
                     <div class="feedback-item">
                         <div class="feedback-header">

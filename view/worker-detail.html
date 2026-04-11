@@ -189,6 +189,17 @@
                 const searchParams = new URLSearchParams(window.location.search);
                 const wId = searchParams.get('id');
                 const wName = document.getElementById('displayName').innerText;
+
+                // Đọc category từ URL (truyền từ main.js) hoặc fallback từ sessionStorage
+                let cat = searchParams.get('category');
+                if (!cat) {
+                    const lastQ = sessionStorage.getItem("lastSearchQuery");
+                    if (lastQ) {
+                        const p = new URLSearchParams(lastQ);
+                        const lastCat = p.get("category");
+                        if (lastCat) cat = lastCat.split(',')[0];
+                    }
+                }
                 
                 if (sessionStorage.getItem("isLoggedIn") !== "true") {
                     alert("Vui lòng đăng nhập để đặt lịch thợ.");
@@ -197,7 +208,9 @@
                 }
                 
                 if (wId) {
-                    window.location.href = `create-request.html?workerId=${wId}&workerName=${encodeURIComponent(wName)}`;
+                    let dest = `create-request.html?workerId=${wId}&workerName=${encodeURIComponent(wName)}`;
+                    if (cat) dest += `&category=${encodeURIComponent(cat)}`;
+                    window.location.href = dest;
                 } else {
                     alert('Lỗi: Không tìm thấy ID thợ.');
                 }

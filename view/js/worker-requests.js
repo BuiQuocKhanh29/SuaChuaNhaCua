@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: #aaa; font-size: 13px;"><i class="fa-regular fa-clock me-1"></i>${new Date(req.createdAt).toLocaleString('vi-VN')}</span>
+                    <span style="color: #aaa; font-size: 13px;"><i class="fa-regular fa-clock me-1"></i>${new Date(req.createdAt + 'Z').toLocaleString('vi-VN')}</span>
                     <div style="display: flex; gap: 10px;">
                         ${req.status === 0 ? `
                             <button class="btn-accept" data-id="${req.id}" style="background: #4e7d63; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s;">
