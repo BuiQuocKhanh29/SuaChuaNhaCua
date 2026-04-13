@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }));
 
         requestsList.innerHTML = currentItems.map(req => {
-            const dateStr = new Date(req.createdAt + 'Z').toLocaleDateString('vi-VN');
+            const dateStr = new Date(req.createdAt).toLocaleDateString('vi-VN');
             const workerHtml = req.workerName
                 ? `<span class="fw-bold text-dark">${req.workerName}</span>`
                 : `<span class="fst-italic text-muted">Chưa phân công</span>`;
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <span class="text-muted small fw-semibold">#${req.id}</span>
                         </div>
                         <div class="d-flex flex-column flex-md-row gap-2 gap-md-4 text-secondary small">
-                            <span><i class="fa-regular fa-calendar me-1"></i> <span class="fw-semibold">Ngày tạo:</span> ${dateStr}</span>
+                            <span><i class="fa-regular fa-clock me-1"></i> <span class="fw-semibold">Cập nhật:</span> <span class="time-ago" data-time="${req.createdAt}">${timeAgo(req.createdAt)}</span></span>
                             <span><i class="fa-solid fa-user-gear me-1"></i> <span class="fw-semibold">Thợ phụ trách:</span> ${workerHtml}</span>
                         </div>
                         ${req.description ? `<p class="text-muted mt-2 mb-0 small"><i class="fa-solid fa-quote-left me-1 text-light"></i>${req.description}</p>` : ''}

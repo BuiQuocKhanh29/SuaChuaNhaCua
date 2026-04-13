@@ -203,7 +203,7 @@
                         <p style="color: #666; font-size: 14px; line-height: 1.5; margin-bottom: 8px;">${n.message}</p>
                         <div style="font-size: 12px; color: #aaa; font-weight: 600; display: flex; align-items: center; gap: 6px;">
                             <i class="fa-regular fa-clock" style="font-size: 11px;"></i>
-                            ${new Date(n.createdAt).toLocaleString('vi-VN')}
+                            ${timeAgo(n.createdAt)}
                         </div>
                     </div>
                 `).join('');

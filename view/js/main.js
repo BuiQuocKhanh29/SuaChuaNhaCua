@@ -137,6 +137,30 @@ function renderPagination(container, totalItems, itemsPerPage, currentPage, onPa
         btn.addEventListener("click", () => onPageChange(parseInt(btn.dataset.page)));
     });
 }
+/**
+ * timeAgo - Hàm biến đổi thời gian thực tế sang dạng tương đối
+ * @param {string|Date} dateString 
+ */
+function timeAgo(dateString) {
+    if (!dateString) return "";
+    // Đảm bảo UTC xử lý đúng nếu backend gửi về UTC. JS Date() tự nhận định dạng ISO.
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    if (seconds < 0) return "Vừa xong"; // Xử lý offset nếu server time hơi lệch
+    
+    let interval = Math.floor(seconds / 31536000);
+    if (interval >= 1) return interval + " năm trước";
+    interval = Math.floor(seconds / 2592000);
+    if (interval >= 1) return interval + " tháng trước";
+    interval = Math.floor(seconds / 86400);
+    if (interval >= 1) return interval + " ngày trước";
+    interval = Math.floor(seconds / 3600);
+    if (interval >= 1) return interval + " giờ trước";
+    interval = Math.floor(seconds / 60);
+    if (interval >= 1) return interval + " phút trước";
+    return "Vừa xong";
+}
 
 document.addEventListener("DOMContentLoaded", function () {
     // Global: Thêm amination chuyển trang mượt mà

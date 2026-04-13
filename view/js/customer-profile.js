@@ -119,10 +119,27 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
+    let hasProfileChanged = false;
+    if (profileForm) {
+        profileForm.addEventListener("input", () => hasProfileChanged = true);
+        profileForm.addEventListener("change", () => hasProfileChanged = true);
+    }
+    if (avatarInput) {
+        avatarInput.addEventListener("change", () => hasProfileChanged = true);
+    }
+    if (btnRemoveAvatar) {
+        btnRemoveAvatar.addEventListener("click", () => hasProfileChanged = true);
+    }
+
     // Update Profile (Name)
     profileForm.addEventListener("submit", async function (e) {
         e.preventDefault();
         
+        if (!hasProfileChanged) {
+            alert("Bạn chưa thay đổi thông tin nào.");
+            return;
+        }
+
         const newName = fullNameInput.value.trim();
         const nameRegex = /^[\p{L}\s]+$/u;
 
@@ -203,6 +220,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (usernameEl) usernameEl.textContent = newName;
 
             alert("Cập nhật thông tin thành công.");
+            hasProfileChanged = false;
             
         } catch (error) {
             console.error(error);
@@ -223,6 +241,10 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         if (newPassword.length < 6) {
             alert("Mật khẩu mới phải có ít nhất 6 ký tự.");
+            return;
+        }
+        if (newPassword === currentPassword) {
+            alert("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
             return;
         }
         if (newPassword !== confirmPassword) {

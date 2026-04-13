@@ -155,17 +155,19 @@
                             class="bi bi-arrow-left me-2"></i> Quay lại trang chủ</a>
                     <h2>Tạo yêu cầu sửa chữa</h2>
 
-                    <form id="requestForm">
+                    <form id="requestForm" novalidate>
                         <div class="mb-3">
                             <label class="form-label">Họ và tên *</label>
                             <input type="text" class="form-control" id="customerName" placeholder="Nhập họ tên của bạn"
                                 required>
+                            <div class="invalid-feedback" id="customerNameError"></div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Số điện thoại *</label>
                             <input type="tel" class="form-control" id="customerPhone" placeholder="VD: 0912345678"
                                 required>
+                            <div class="invalid-feedback" id="customerPhoneError"></div>
                         </div>
 
                         <div class="mb-3">
@@ -173,6 +175,7 @@
                             <select class="form-select" id="provinceSelect" required>
                                 <option value="">-- Chọn Tỉnh/TP --</option>
                             </select>
+                            <div class="invalid-feedback" id="provinceSelectError"></div>
                         </div>
 
                         <div class="mb-3">
@@ -180,12 +183,14 @@
                             <select class="form-select" id="districtSelect">
                                 <option value="">-- Chọn Quận/Huyện --</option>
                             </select>
+                            <div class="invalid-feedback" id="districtSelectError"></div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Địa chỉ chi tiết * (Số nhà, tên đường)</label>
                             <input type="text" class="form-control" id="addressDetail" placeholder="VD: 71 Ngu Hành Son"
                                 required>
+                            <div class="invalid-feedback" id="addressDetailError"></div>
                         </div>
 
                         <div class="mb-3">
@@ -209,6 +214,7 @@
                                 <option value="Sửa máy bơm">Sửa máy bơm</option>
                                 <option value="Lắp camera">Lắp camera</option>
                             </select>
+                            <div class="invalid-feedback" id="categoryError"></div>
                         </div>
 
                         <div class="mb-3">

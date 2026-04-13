@@ -10,15 +10,39 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 
-<body>
-
     <nav class="navbar-custom">
         <div class="container nav-wrapper">
-            <div class="logo d-flex align-items-center gap-2">`n                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-success"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`n                FixItNow`n            </div>
+            <a href="index.html" class="logo d-flex align-items-center gap-2 text-dark text-decoration-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-success"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                FixItNow
+            </a>
             <div class="nav-actions">
-                <a href="index.html" class="btn-home" style="text-decoration: none;">
-                    Trang chủ
-                </a>
+                <div class="nav-guest">
+                    <a href="register.html" class="btn-register" style="text-decoration:none;">Đăng ký</a>
+                    <a href="login.html" class="btn-login" style="text-decoration:none;">Đăng nhập</a>
+                </div>
+                <div class="nav-user" id="navUser" style="display:none; align-items: center;">
+                    <div class="user-dropdown">
+                        <button class="user-btn" id="userAvatar">
+                            <img src="assets/images/user.png" class="user-avatar">
+                            <span id="username">Người dùng</span>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a href="#" id="navManageRequests">
+                                <img src="assets/images/list.png" width="18">
+                                Quản lý yêu cầu
+                            </a>
+                            <a href="#" id="navProfileLink">
+                                <img src="assets/images/avatar.png" width="18">
+                                Quản lý hồ sơ
+                            </a>
+                            <a href="#" id="logoutBtn">
+                                <img src="assets/images/logout.png" width="18">
+                                Đăng xuất
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
@@ -86,14 +110,12 @@
         </div>
     </main>
 
-
-
     <footer class="footer">
         © 2026 FixItNow - Website kết nối sửa chữa dân dụng tức thời
     </footer>
 
     <script src="js/config.js"></script>
-
+    <script src="js/main.js"></script>
     <script src="js/repairman-detail.js"></script>
 
 </body>

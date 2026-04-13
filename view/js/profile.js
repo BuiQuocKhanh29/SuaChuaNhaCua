@@ -255,10 +255,27 @@ document.addEventListener("DOMContentLoaded", function () {
         } catch (err) { console.error("Lỗi tải hồ sơ:", err); }
     }
 
+    let hasProfileChanged = false;
+    if (profileForm) {
+        profileForm.addEventListener("input", () => hasProfileChanged = true);
+        profileForm.addEventListener("change", () => hasProfileChanged = true);
+    }
+    if (avatarInput) {
+        avatarInput.addEventListener("change", () => hasProfileChanged = true);
+    }
+    if (btnRemoveAvatar) {
+        btnRemoveAvatar.addEventListener("click", () => hasProfileChanged = true);
+    }
+
     /* ================= SAVE PROFILE ================= */
     if (profileForm) {
         profileForm.addEventListener("submit", async function (e) {
             e.preventDefault();
+
+            if (!hasProfileChanged) {
+                showModal("Bạn chưa thay đổi thông tin nào.", "warning");
+                return;
+            }
 
             const nameVal = inputName ? inputName.value.trim() : "";
             const nameRegex = /^[\p{L}\s]+$/u;
@@ -387,6 +404,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (usernameEl) usernameEl.textContent = newName;
 
                     showModal("Cập nhật thông tin thành công.", "success");
+                    hasProfileChanged = false;
                     loadProfile();
                 } else {
                     alert("Lưu thất bại. Vui lòng thử lại.");
@@ -415,6 +433,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (newPassword.length < 6) {
                 alert("Mật khẩu mới phải có ít nhất 6 ký tự.");
+                return;
+            }
+            if (newPassword === currentPassword) {
+                alert("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
                 return;
             }
             if (newPassword !== confirmPassword) {

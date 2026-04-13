@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             console.error("Lỗi lấy danh sách tỉnh/thành:", err);
         }
     }
-    loadProvinces();
+    window.loadProvincesPromise = loadProvinces();
 
     // ======= PROVINCE → DISTRICT CASCADE =======
     provinceSelect.addEventListener("change", function () {
@@ -214,6 +214,57 @@ document.addEventListener("DOMContentLoaded", async function () {
                     const fakeInput = document.getElementById("fakeWorkerInput");
                     if (fakeInput && selectedWorker) {
                         fakeInput.innerHTML = `<i class="fa-solid fa-helmet-safety me-2" style="color:#4e7d63;"></i> Thợ: ${selectedWorker.nameOrStore} <span style="color:#666; font-weight:500; font-size:13px; margin-left:8px;">(${selectedWorker.location || "Không rõ"})</span>`;
+                        
+                        // [CẬP NHẬT] Lọc danh mục dịch vụ theo kỹ năng của thợ
+                        let sList = [];
+                        if (Array.isArray(selectedWorker.services)) {
+                            sList = selectedWorker.services;
+                        } else if (typeof selectedWorker.services === 'string') {
+                            try { sList = JSON.parse(selectedWorker.services); } 
+                            catch(e) { sList = selectedWorker.services.split(',').map(s=>s.trim()); }
+                        }
+                        
+                        if (sList.length > 0) {
+                            const categorySelect = document.getElementById("category");
+                            Array.from(categorySelect.options).forEach(opt => {
+                                if (opt.value) {
+                                    // Bổ sung so sánh chứa nhau (vd: "Máy lạnh" và "Sửa máy lạnh")
+                                    const isMatch = sList.some(s => 
+                                        opt.value.toLowerCase() === s.toLowerCase() ||
+                                        opt.value.toLowerCase().includes(s.toLowerCase()) || 
+                                        s.toLowerCase().includes(opt.value.toLowerCase())
+                                    );
+                                    if (!isMatch) {
+                                        opt.style.display = "none";
+                                        opt.disabled = true;
+                                    } else {
+                                        opt.style.display = "";
+                                        opt.disabled = false;
+                                    }
+                                }
+                            });
+                            // Nếu option đang được select nằm trong diện bị disabled, tự động nhảy sang option hợp lệ đầu tiên
+                            if (categorySelect.options[categorySelect.selectedIndex] && categorySelect.options[categorySelect.selectedIndex].disabled) {
+                                const firstValid = Array.from(categorySelect.options).find(opt => opt.value && !opt.disabled);
+                                if (firstValid) {
+                                    categorySelect.value = firstValid.value;
+                                }
+                            }
+                        }
+
+                        // [CẬP NHẬT] Tự động chọn Tỉnh/Thành phố dựa trên location của thợ để tránh lỗi
+                        if (selectedWorker.location) {
+                            await window.loadProvincesPromise; // Chờ load tỉnh xong mới đổi value
+                            const wLoc = selectedWorker.location.toLowerCase();
+                            const pOpts = Array.from(provinceSelect.options);
+                            const matchProv = pOpts.find(opt => opt.value && wLoc.includes(opt.value.toLowerCase().replace("thành phố ", "").replace("tỉnh ", "")));
+                            if (matchProv) {
+                                provinceSelect.value = matchProv.value;
+                                // Kích hoạt sự kiện để load danh sách quận/huyện
+                                provinceSelect.dispatchEvent(new Event('change'));
+                            }
+                        }
+                        
                     } else if (fakeInput) {
                         fakeInput.innerHTML = `<i class="fa-solid fa-helmet-safety me-2" style="color:#4e7d63;"></i> Thợ sửa chữa (ID: ${preWorkerId})`;
                     }
@@ -236,18 +287,48 @@ document.addEventListener("DOMContentLoaded", async function () {
     form.addEventListener("submit", async function (e) {
         e.preventDefault();
 
-        const province = provinceSelect.value;
-        const district = districtSelect.value;
+        const customerName = document.getElementById("customerName").value.trim();
+        const customerPhone = document.getElementById("customerPhone").value.trim();
         const detail = document.getElementById("addressDetail").value.trim();
+        const province = provinceSelect.value.trim();
+        const district = districtSelect.value.trim();
+        const category = document.getElementById("category").value.trim();
 
+        let hasError = false;
+        document.querySelectorAll(".is-invalid").forEach(el => el.classList.remove("is-invalid"));
+
+        if (!customerName) {
+            document.getElementById("customerName").classList.add("is-invalid");
+            document.getElementById("customerNameError").textContent = "Họ và Tên không được bỏ trống, vui lòng nhập lại.";
+            hasError = true;
+        }
+        if (!customerPhone) {
+            document.getElementById("customerPhone").classList.add("is-invalid");
+            document.getElementById("customerPhoneError").textContent = "Số điện thoại không được bỏ trống, vui lòng nhập lại.";
+            hasError = true;
+        }
         if (!province) {
-            showModal("Vui lòng chọn Tỉnh/Thành phố.", "warning");
-            return;
+            document.getElementById("provinceSelect").classList.add("is-invalid");
+            document.getElementById("provinceSelectError").textContent = "Tỉnh/Thành phố không được bỏ trống, vui lòng chọn lại";
+            hasError = true;
+        }
+        if (!district) {
+            document.getElementById("districtSelect").classList.add("is-invalid");
+            document.getElementById("districtSelectError").textContent = "Quận/Huyện không được bỏ trống, vui lòng chọn lại";
+            hasError = true;
         }
         if (!detail) {
-            showModal("Vui lòng nhập địa chỉ chi tiết (số nhà, tên đường).", "warning");
-            return;
+            document.getElementById("addressDetail").classList.add("is-invalid");
+            document.getElementById("addressDetailError").textContent = "Địa chỉ không được bỏ trống, vui lòng nhập lại.";
+            hasError = true;
         }
+        if (!category) {
+            document.getElementById("category").classList.add("is-invalid");
+            document.getElementById("categoryError").textContent = "Danh mục dịch vụ không được bỏ trống, vui lòng chọn lại.";
+            hasError = true;
+        }
+
+        if (hasError) return;
 
         // Ghép địa chỉ đầy đủ: "Số nhà, Quận, Tỉnh"
         let fullAddress = detail;
@@ -255,18 +336,12 @@ document.addEventListener("DOMContentLoaded", async function () {
         fullAddress += ", " + province;
 
         const basePayload = {
-            customerName: document.getElementById("customerName").value.trim(),
-            customerPhone: document.getElementById("customerPhone").value.trim(),
+            customerName: customerName,
+            customerPhone: customerPhone,
             address: fullAddress,
-            category: document.getElementById("category").value,
+            category: category,
             description: document.getElementById("description").value.trim()
         };
-
-        // Validate thêm
-        if (!basePayload.customerName || !basePayload.customerPhone || !basePayload.category) {
-            showModal("Vui lòng điền đầy đủ các trường bắt buộc (*).", "warning");
-            return;
-        }
 
         // Validate Họ Tên (chỉ được phép sử dụng chữ cái và khoảng trắng)
         const nameRegex = /^[\p{L}\s]+$/u;
@@ -286,6 +361,19 @@ document.addEventListener("DOMContentLoaded", async function () {
         submitBtn.textContent = "Đang gửi...";
 
         try {
+            // [CẬP NHẬT] Đảm bảo có ít nhất 1 thợ phù hợp trước khi cho phép tạo (áp dụng cho cả 3 chế độ)
+            const locStr = district ? `${province}, ${district}` : province; // SDB API location search support
+            const checkRes = await fetch(`${API_BASE_URL}/api/profiles/search?category=${encodeURIComponent(category)}&location=${encodeURIComponent(locStr)}`);
+            if (checkRes.ok) {
+                const workersData = await checkRes.json();
+                if (!workersData || workersData.length === 0) {
+                    showModal("Hiện tại chưa có thợ hỗ trợ dịch vụ này ở khu vực của bạn. Bạn có thể chọn danh mục/khu vực khác hoặc liên hệ hotline để được hỗ trợ ngoài!", "warning");
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Gửi yêu cầu";
+                    return;
+                }
+            }
+
             let payload;
 
             if (mode === "broadcast") {
@@ -326,8 +414,18 @@ document.addEventListener("DOMContentLoaded", async function () {
             });
 
             if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.message || "Lỗi tạo yêu cầu");
+                const err = await res.json().catch(() => ({}));
+                let errorMsg = "Lỗi tạo yêu cầu";
+                if (err.errors) {
+                    errorMsg = Object.values(err.errors).flat().join("\\n");
+                } else if (err.message) {
+                    errorMsg = err.message;
+                } else if (err.title) {
+                    errorMsg = err.title;
+                } else if (typeof err === "string") {
+                    errorMsg = err;
+                }
+                throw new Error(errorMsg);
             }
 
             const data = await res.json();

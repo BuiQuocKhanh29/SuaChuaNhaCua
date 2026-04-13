@@ -135,7 +135,7 @@ document.addEventListener("DOMContentLoaded", function () {
             reviewsContainer.innerHTML = reviews.map(rev => {
                 const name = rev.customerName || 'Khách hàng';
                 const initial = name.charAt(0).toUpperCase();
-                const dateStr = new Date(rev.createdAt + 'Z').toLocaleDateString('vi-VN');
+                const dateStr = new Date(rev.createdAt).toLocaleDateString('vi-VN');
                 const starText = '★'.repeat(Math.min(rev.rating, 5)) + '☆'.repeat(5 - Math.min(rev.rating, 5));
 
                 return `
