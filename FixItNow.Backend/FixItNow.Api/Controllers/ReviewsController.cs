@@ -44,7 +44,7 @@ public class ReviewsController : ControllerBase
             WorkerId = dto.WorkerId,
             Rating = dto.Rating,
             Comment = dto.Comment,
-            CreatedAt = DateTime.Now
+            CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
         };
 
         _context.Reviews.Add(review);

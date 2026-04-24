@@ -17,5 +17,5 @@ public class User
     public UserRole Role { get; set; }
     public int? WorkerProfileId { get; set; } // Link to WorkerProfile if Role is Worker
     public string? AvatarUrl { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
 }

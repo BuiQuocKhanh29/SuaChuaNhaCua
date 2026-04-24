@@ -37,6 +37,6 @@ public class RepairRequest
 	// Trạng thái
 	public RequestStatus Status { get; set; } = RequestStatus.Pending;
 
-	public DateTime CreatedAt { get; set; } = DateTime.Now;
+	public DateTime CreatedAt { get; set; } = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
 	public DateTime? UpdatedAt { get; set; }
 }

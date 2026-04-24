@@ -12,5 +12,5 @@ public class Review
     public string WorkerName { get; set; } = string.Empty;
     public int Rating { get; set; } // 1-5
     public string Comment { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
 }

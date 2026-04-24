@@ -43,7 +43,7 @@ public class RepairRequestsController : ControllerBase
                 WorkerName = "Đang chờ thợ nhận...",
                 IsBroadcast = true,
                 Status = RequestStatus.Pending,
-                CreatedAt = DateTime.Now
+                CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
             };
 
             _context.RepairRequests.Add(request);
@@ -87,7 +87,7 @@ public class RepairRequestsController : ControllerBase
                     Message = $"{dto.CustomerName} cần \"{dto.Category}\" tại {dto.Address}. Ai nhận trước được!",
                     Type = "broadcast_request",
                     RelatedRequestId = request.Id,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
                 });
             }
             await _context.SaveChangesAsync();
@@ -112,7 +112,7 @@ public class RepairRequestsController : ControllerBase
                 TargetWorkerIds = targetIdsString,
                 IsBroadcast = false,
                 Status = RequestStatus.Pending,
-                CreatedAt = DateTime.Now
+                CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
             };
 
             _context.RepairRequests.Add(request);
@@ -134,7 +134,7 @@ public class RepairRequestsController : ControllerBase
                         Message = $"{dto.CustomerName} vừa chọn bạn cho dịch vụ \"{dto.Category}\". Ai nhận trước được!",
                         Type = "new_request",
                         RelatedRequestId = request.Id,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
                     });
                 }
             }
@@ -162,7 +162,7 @@ public class RepairRequestsController : ControllerBase
             WorkerName = singleWorker.NameOrStore,
             IsBroadcast = false,
             Status = RequestStatus.Pending,
-            CreatedAt = DateTime.Now
+            CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
         };
 
         _context.RepairRequests.Add(singleRequest);
@@ -179,7 +179,7 @@ public class RepairRequestsController : ControllerBase
             Message = $"{dto.CustomerName} gửi yêu cầu \"{dto.Category}\" tại {dto.Address}",
             Type = "new_request",
             RelatedRequestId = singleRequest.Id,
-            CreatedAt = DateTime.Now
+            CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
         };
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
@@ -275,63 +275,93 @@ public class RepairRequestsController : ControllerBase
     [HttpPut("{id}/accept")]
     public async Task<IActionResult> AcceptRequest(int id, [FromQuery] int? workerId)
     {
-        var request = await _context.RepairRequests.FindAsync(id);
-        if (request == null)
-            return NotFound(new { message = "Không tìm thấy yêu cầu" });
-
-        // ====== BẢO MẬT: Kiểm tra trạng thái trước (nhanh, tránh query thừa) ======
-        if (request.Status != RequestStatus.Pending)
+        // Dùng transaction SERIALIZABLE để đảm bảo chỉ 1 thợ duy nhất chốt được
+        using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
+        try
         {
-            if (request.Status == RequestStatus.Cancelled)
-                return BadRequest(new { message = "Yêu cầu này đã bị khách hàng hủy." });
-            return BadRequest(new { message = "Yêu cầu này đã được xử lý bởi thợ khác." });
-        }
+            var request = await _context.RepairRequests.FindAsync(id);
+            if (request == null)
+                return NotFound(new { message = "Không tìm thấy yêu cầu" });
 
-        // Xác định thông tin thợ nhận
-        int assignedWorkerId = request.WorkerId ?? 0;
-        string assignedWorkerName = request.WorkerName;
-
-        if ((request.IsBroadcast || !string.IsNullOrEmpty(request.TargetWorkerIds)) && workerId.HasValue)
-        {
-            var worker = await _context.WorkerProfiles.FindAsync(workerId.Value);
-            if (worker != null)
+            // ====== LỌC DỮ LIỆU RÁC (GHOST ADDRESS) ======
+            if (string.IsNullOrWhiteSpace(request.Address) || !System.Text.RegularExpressions.Regex.IsMatch(request.Address, @"[\p{L}\p{N}]"))
             {
-                // Kiểm tra quyền đối với đơn Multi-select
-                if (!request.IsBroadcast && !string.IsNullOrEmpty(request.TargetWorkerIds) && !CsvHelper.CsvContains(request.TargetWorkerIds, workerId.Value))
+                if (request.Status == RequestStatus.Pending)
                 {
-                    return BadRequest(new { message = "Bạn không có quyền nhận yêu cầu này" });
+                    request.Status = RequestStatus.Cancelled;
+                    request.UpdatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
                 }
-
-                assignedWorkerId = workerId.Value;
-                assignedWorkerName = worker.NameOrStore;
+                return BadRequest(new { message = "Hệ thống phát hiện đây là yêu cầu rác (địa chỉ không có thực) và đã tự động từ chối/hủy yêu cầu này." });
             }
+
+            // ====== BẢO MẬT: Kiểm tra trạng thái trước ======
+            if (request.Status != RequestStatus.Pending)
+            {
+                await transaction.RollbackAsync();
+                if (request.Status == RequestStatus.Cancelled)
+                    return BadRequest(new { message = "Yêu cầu này đã bị khách hàng hủy." });
+                return BadRequest(new { message = "Yêu cầu này đã được thợ khác chấp nhận trước bạn. Vui lòng thử yêu cầu khác!" });
+            }
+
+            // Xác định thông tin thợ nhận
+            int assignedWorkerId = request.WorkerId ?? 0;
+            string assignedWorkerName = request.WorkerName;
+
+            if ((request.IsBroadcast || !string.IsNullOrEmpty(request.TargetWorkerIds)) && workerId.HasValue)
+            {
+                var worker = await _context.WorkerProfiles.FindAsync(workerId.Value);
+                if (worker != null)
+                {
+                    if (!request.IsBroadcast && !string.IsNullOrEmpty(request.TargetWorkerIds) && !CsvHelper.CsvContains(request.TargetWorkerIds, workerId.Value))
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest(new { message = "Bạn không có quyền nhận yêu cầu này" });
+                    }
+                    assignedWorkerId = workerId.Value;
+                    assignedWorkerName = worker.NameOrStore;
+                }
+            }
+
+            // ====== DETACH entity cũ khỏi change tracker để tránh ghi đè dữ liệu cũ ======
+            _context.Entry(request).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+
+            // ====== BẢO MẬT: Atomic UPDATE — chỉ 1 thợ duy nhất chốt được ======
+            var rowsAffected = await _context.Database.ExecuteSqlRawAsync(
+                "UPDATE RepairRequests SET Status = 1, WorkerId = {0}, WorkerName = {1}, UpdatedAt = {2} WHERE Id = {3} AND Status = 0",
+                assignedWorkerId, assignedWorkerName, FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime(), id);
+
+            if (rowsAffected == 0)
+            {
+                await transaction.RollbackAsync();
+                return BadRequest(new { message = "Yêu cầu này đã được thợ khác chấp nhận trước bạn. Vui lòng thử yêu cầu khác!" });
+            }
+
+            // Fetch lại entity mới (đã được atomic update)
+            var updatedRequest = await _context.RepairRequests.FindAsync(id);
+
+            // US_08: Thông báo cho khách hàng
+            var notification = new Notification
+            {
+                UserPhone = updatedRequest!.CustomerPhone,
+                Title = "✅ Yêu cầu đã được chấp nhận",
+                Message = $"Thợ {updatedRequest.WorkerName} đã chấp nhận yêu cầu \"{updatedRequest.Category}\"",
+                Type = "accepted",
+                RelatedRequestId = updatedRequest.Id,
+                CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
+            };
+            _context.Notifications.Add(notification);
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+            return Ok(new { message = "Đã chấp nhận yêu cầu", request = updatedRequest });
         }
-
-        // ====== BẢO MẬT: Atomic UPDATE — chỉ 1 thợ duy nhất chốt được ======
-        var rowsAffected = await _context.Database.ExecuteSqlRawAsync(
-            "UPDATE RepairRequests SET Status = 1, WorkerId = {0}, WorkerName = {1}, UpdatedAt = {2} WHERE Id = {3} AND Status = 0",
-            assignedWorkerId, assignedWorkerName, DateTime.Now, id);
-
-        if (rowsAffected == 0)
-            return BadRequest(new { message = "Yêu cầu này đã được xử lý bởi thợ khác" });
-
-        // Reload lại data sau khi update thành công
-        await _context.Entry(request).ReloadAsync();
-
-        // US_08: Thông báo cho khách hàng (GIỮ NGUYÊN)
-        var notification = new Notification
+        catch (Exception)
         {
-            UserPhone = request.CustomerPhone,
-            Title = "✅ Yêu cầu đã được chấp nhận",
-            Message = $"Thợ {request.WorkerName} đã chấp nhận yêu cầu \"{request.Category}\"",
-            Type = "accepted",
-            RelatedRequestId = request.Id,
-            CreatedAt = DateTime.Now
-        };
-        _context.Notifications.Add(notification);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "Đã chấp nhận yêu cầu", request });
+            await transaction.RollbackAsync();
+            return StatusCode(500, new { message = "Đã xảy ra lỗi khi xử lý yêu cầu. Vui lòng thử lại." });
+        }
     }
 
     // ====== US_06: Từ chối yêu cầu ======
@@ -357,7 +387,7 @@ public class RepairRequestsController : ControllerBase
                 if (CsvHelper.CsvIsEmpty(request.TargetWorkerIds))
                 {
                     request.Status = RequestStatus.Cancelled;
-                    request.UpdatedAt = DateTime.Now;
+                    request.UpdatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
                     
                     var notif = new Notification
                     {
@@ -366,7 +396,7 @@ public class RepairRequestsController : ControllerBase
                         Message = $"Tất cả thợ được chọn đã từ chối yêu cầu \"{request.Category}\"",
                         Type = "rejected",
                         RelatedRequestId = request.Id,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
                     };
                     _context.Notifications.Add(notif);
                 }
@@ -403,7 +433,7 @@ public class RepairRequestsController : ControllerBase
                 if (allRejected)
                 {
                     request.Status = RequestStatus.Cancelled;
-                    request.UpdatedAt = DateTime.Now;
+                    request.UpdatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
 
                     _context.Notifications.Add(new Notification
                     {
@@ -412,7 +442,7 @@ public class RepairRequestsController : ControllerBase
                         Message = $"Rất tiếc, tất cả thợ trong khu vực đã từ chối yêu cầu \"{request.Category}\". Vui lòng thử lại sau.",
                         Type = "all_rejected",
                         RelatedRequestId = request.Id,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
                     });
                 }
             }
@@ -421,7 +451,7 @@ public class RepairRequestsController : ControllerBase
         {
             // Đơn 1-kèm-1 (Single worker)
             request.Status = RequestStatus.Cancelled;
-            request.UpdatedAt = DateTime.Now;
+            request.UpdatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
 
             // US_08: Thông báo cho khách hàng
             var notification = new Notification
@@ -431,7 +461,7 @@ public class RepairRequestsController : ControllerBase
                 Message = $"Thợ {request.WorkerName} đã từ chối yêu cầu \"{request.Category}\"",
                 Type = "rejected",
                 RelatedRequestId = request.Id,
-                CreatedAt = DateTime.Now
+                CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
             };
             _context.Notifications.Add(notification);
         }
@@ -456,7 +486,7 @@ public class RepairRequestsController : ControllerBase
             return BadRequest(new { message = "Chỉ có thể hủy yêu cầu đang ở trạng thái 'Đang chờ'" });
 
         request.Status = RequestStatus.Cancelled;
-        request.UpdatedAt = DateTime.Now;
+        request.UpdatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
 
         // Thông báo cho thợ (nếu đã có thợ nhận hoặc đơn broadcast/multi)
         if (request.WorkerId != null)
@@ -473,7 +503,7 @@ public class RepairRequestsController : ControllerBase
                     Message = $"{request.CustomerName} đã huỷ yêu cầu \"{request.Category}\" tại {request.Address}",
                     Type = "customer_cancelled",
                     RelatedRequestId = request.Id,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
                 });
             }
         }
@@ -495,7 +525,7 @@ public class RepairRequestsController : ControllerBase
             return BadRequest(new { message = "Chỉ có thể hoàn thành yêu cầu đã được xác nhận" });
 
         request.Status = RequestStatus.Completed;
-        request.UpdatedAt = DateTime.Now;
+        request.UpdatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
 
         // US_08: Thông báo cho khách hàng
         var notification = new Notification
@@ -505,7 +535,7 @@ public class RepairRequestsController : ControllerBase
             Message = $"Thợ {request.WorkerName} đã hoàn thành yêu cầu \"{request.Category}\". Hãy để lại đánh giá nhé!",
             Type = "completed",
             RelatedRequestId = request.Id,
-            CreatedAt = DateTime.Now
+            CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
         };
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();
@@ -529,7 +559,7 @@ public class RepairRequestsController : ControllerBase
             return BadRequest(new { message = "Trạng thái không hợp lệ" });
 
         request.Status = (RequestStatus)dto.Status;
-        request.UpdatedAt = DateTime.Now;
+        request.UpdatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
 
         // Thông báo cho khách hàng
         var statusLabel = request.Status == RequestStatus.Completed ? "Hoàn thành" : "Đang xử lý";
@@ -540,7 +570,7 @@ public class RepairRequestsController : ControllerBase
             Message = $"Yêu cầu \"{request.Category}\" đã được cập nhật: {statusLabel}",
             Type = "status_update",
             RelatedRequestId = request.Id,
-            CreatedAt = DateTime.Now
+            CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
         };
         _context.Notifications.Add(notification);
         await _context.SaveChangesAsync();

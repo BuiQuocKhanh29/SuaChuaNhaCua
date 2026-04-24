@@ -152,6 +152,16 @@ document.addEventListener("DOMContentLoaded", async function () {
             return;
         }
 
+        let newEmail = "";
+        if (emailInput) {
+            newEmail = emailInput.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (newEmail !== "" && !emailRegex.test(newEmail)) {
+                alert("Email không đúng định dạng. Vui lòng kiểm tra lại.");
+                return;
+            }
+        }
+
         btnUpdateProfile.disabled = true;
         btnUpdateProfile.textContent = "Đang lưu...";
 

@@ -55,7 +55,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${!n.isRead ? '<span class="badge bg-danger rounded-pill" style="font-size: 10px;">Mới</span>' : ''}
                 </div>
                 <p class="mb-1 text-muted small ms-4 ps-1">${n.message}</p>
-                <div class="text-muted small ms-4 ps-1"><i class="fa-regular fa-clock me-1"></i><span class="time-ago" data-time="${n.createdAt}">${timeAgo(n.createdAt)}</span></div>
+                <div class="text-muted small ms-4 ps-1">
+                    <i class="fa-regular fa-clock me-1"></i>
+                    <span class="time-ago" data-time="${n.createdAt}">${timeAgo(n.createdAt)}</span>
+                    <span class="ms-2 text-muted" style="font-size:11px;">(${new Date(n.createdAt).toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })})</span>
+                </div>
             </div>
         `).join('');
 
@@ -119,7 +123,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.markAsRead = async (id) => {
         try {
             await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, { method: 'PATCH' });
-            fetchNotifications(); // Refresh
+            fetchNotifications(); // Refresh danh sách
+            if (typeof window.refreshNotifBadge === 'function') {
+                window.refreshNotifBadge(); // Cập nhật badge ngay lập tức
+            }
         } catch (error) {
             console.error(error);
         }

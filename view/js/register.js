@@ -145,9 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
             valid = false;
         }
 
-        // 3. Password validation: min 6
+        // 3. Password validation: min 6, no spaces
         if (password.length < 6) {
             showError(passwordInput, passwordError, 'Mật khẩu phải có ít nhất 6 ký tự.');
+            valid = false;
+        } else if (password.includes(' ')) {
+            showError(passwordInput, passwordError, 'Mật khẩu không được chứa khoảng trắng.');
             valid = false;
         }
 

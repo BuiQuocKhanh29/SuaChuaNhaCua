@@ -65,11 +65,11 @@ document.addEventListener("DOMContentLoaded", function () {
             displayAvatar.src = "assets/images/user.png";
         }
 
-        // Rating
-        const rating = data.rating || 0;
-        const stars = Math.round(rating);
-        displayRatingHtml.innerHTML = '<i class="fa-solid fa-star"></i>'.repeat(stars) + '<i class="fa-regular fa-star"></i>'.repeat(5 - stars);
-        displayRatingScore.textContent = rating.toFixed(1);
+        // Rating — chỉ hiển thị khi có đánh giá (do fetchCustomerReviews cập nhật lại sau)
+        const ratingSection = displayRatingHtml?.closest('.rating-section') || displayRatingHtml?.parentElement;
+        if (displayRatingHtml) displayRatingHtml.innerHTML = '';
+        if (displayRatingScore) displayRatingScore.textContent = '';
+        if (ratingSection) ratingSection.style.display = 'none'; // ẩn mặc định, hiện lại khi có đánh giá
 
         // Services
         displayServices.innerHTML = "";
@@ -122,13 +122,24 @@ document.addEventListener("DOMContentLoaded", function () {
             // Update the profile rating with real average
             if (data.averageRating != null && displayRatingScore && displayRatingHtml) {
                 const avg = parseFloat(data.averageRating);
-                const stars = Math.round(avg);
-                displayRatingHtml.innerHTML = '<i class="fa-solid fa-star"></i>'.repeat(stars) + '<i class="fa-regular fa-star"></i>'.repeat(5 - stars);
-                displayRatingScore.textContent = avg.toFixed(1);
+                const reviewList = data.reviews || data;
+                const hasReviews = Array.isArray(reviewList) && reviewList.length > 0;
+                if (hasReviews) {
+                    const stars = Math.round(avg);
+                    displayRatingHtml.innerHTML = '<i class="fa-solid fa-star"></i>'.repeat(stars) + '<i class="fa-regular fa-star"></i>'.repeat(5 - stars);
+                    displayRatingScore.textContent = avg.toFixed(1);
+                    const ratingSection = displayRatingHtml?.closest('.rating-section') || displayRatingHtml?.parentElement;
+                    if (ratingSection) ratingSection.style.display = '';
+                }
             }
 
             if (!reviews || reviews.length === 0) {
                 reviewsContainer.innerHTML = '<p style="color:#999; font-size:14px; text-align:center; padding:20px 0;">Chưa có đánh giá nào từ khách hàng.</p>';
+                // Ẩn phần sao nếu không có đánh giá
+                if (displayRatingHtml) displayRatingHtml.innerHTML = '';
+                if (displayRatingScore) displayRatingScore.textContent = '';
+                const ratingSection = displayRatingHtml?.closest('.rating-section') || displayRatingHtml?.parentElement;
+                if (ratingSection) ratingSection.style.display = 'none';
                 return;
             }
 

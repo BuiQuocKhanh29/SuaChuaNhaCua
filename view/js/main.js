@@ -13,7 +13,7 @@ function showModal(message, type = "success", options = {}) {
     const c = config[type] || config.success;
     
     const overlay = document.createElement("div");
-    overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s ease;";
+    overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s ease;";
     
     const modal = document.createElement("div");
     modal.style.cssText = "background:#fff;padding:36px 32px;border-radius:24px;text-align:center;max-width:380px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,.2);transform:translateY(20px) scale(.95);transition:all .4s cubic-bezier(.34,1.56,.64,1);";
@@ -28,6 +28,7 @@ function showModal(message, type = "success", options = {}) {
     
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
+    document.body.style.overflow = "hidden"; // Khoá cuộn trang
     
     // Animation in
     requestAnimationFrame(() => {
@@ -39,11 +40,17 @@ function showModal(message, type = "success", options = {}) {
     function closeModal() {
         overlay.style.opacity = "0";
         modal.style.transform = "translateY(20px) scale(.95)";
-        setTimeout(() => { overlay.remove(); if (options.onClose) options.onClose(); }, 300);
+        setTimeout(() => {
+            overlay.remove();
+            document.body.style.overflow = ""; // Mở khoá cuộn
+            if (options.onClose) options.onClose();
+        }, 300);
     }
     
     modal.querySelector(".modal-close-btn").addEventListener("click", closeModal);
-    overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
+    overlay.addEventListener("click", (e) => { 
+        if (e.target === overlay && !options.preventOutsideClick) closeModal(); 
+    });
     
     // Hover effects
     const btn = modal.querySelector(".modal-close-btn");
@@ -66,7 +73,7 @@ function showModal(message, type = "success", options = {}) {
 function showConfirmModal(message, confirmText = "Xác nhận", cancelText = "Hủy bỏ") {
     return new Promise(resolve => {
         const overlay = document.createElement("div");
-        overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s ease;";
+        overlay.style.cssText = "position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);backdrop-filter:blur(5px);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s ease;";
         const modal = document.createElement("div");
         modal.style.cssText = "background:#fff;padding:36px 32px;border-radius:24px;text-align:center;max-width:380px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,.2);transform:translateY(20px) scale(.95);transition:all .4s cubic-bezier(.34,1.56,.64,1);";
         modal.innerHTML = `
@@ -80,6 +87,7 @@ function showConfirmModal(message, confirmText = "Xác nhận", cancelText = "H�
         `;
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
+        document.body.style.overflow = "hidden"; // Khoá cuộn trang
         requestAnimationFrame(() => {
             overlay.style.opacity = "1";
             modal.style.transform = "translateY(0) scale(1)";
@@ -87,7 +95,11 @@ function showConfirmModal(message, confirmText = "Xác nhận", cancelText = "H�
         function close(result) {
             overlay.style.opacity = "0";
             modal.style.transform = "translateY(20px) scale(.95)";
-            setTimeout(() => { overlay.remove(); resolve(result); }, 300);
+            setTimeout(() => {
+                overlay.remove();
+                document.body.style.overflow = ""; // Mở khoá cuộn trang
+                resolve(result);
+            }, 300);
         }
         modal.querySelector(".confirm-yes").addEventListener("click", () => close(true));
         modal.querySelector(".confirm-no").addEventListener("click", () => close(false));
@@ -137,13 +149,16 @@ function renderPagination(container, totalItems, itemsPerPage, currentPage, onPa
         btn.addEventListener("click", () => onPageChange(parseInt(btn.dataset.page)));
     });
 }
+
 /**
  * timeAgo - Hàm biến đổi thời gian thực tế sang dạng tương đối
+
  * @param {string|Date} dateString 
  */
 function timeAgo(dateString) {
     if (!dateString) return "";
-    // Đảm bảo UTC xử lý đúng nếu backend gửi về UTC. JS Date() tự nhận định dạng ISO.
+    
+    // Đảm bảo UTC xử lý đúng nếu backend gửi về thư viện thời gian mà không có múi giờ
     const date = new Date(dateString);
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
@@ -680,8 +695,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (rRes.ok) {
                         const rData = await rRes.json();
                         worker.displayRating = rData.averageRating != null ? parseFloat(rData.averageRating) : (worker.rating || 0);
-                    } else worker.displayRating = worker.rating || 0;
-                } catch { worker.displayRating = worker.rating || 0; }
+                        const reviews = rData.reviews || rData;
+                        worker.reviewCount = Array.isArray(reviews) ? reviews.length : 0;
+                    } else { worker.displayRating = worker.rating || 0; worker.reviewCount = 0; }
+                } catch { worker.displayRating = worker.rating || 0; worker.reviewCount = 0; }
             }));
 
             searchWorkers = data;
@@ -768,9 +785,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             </div>
                             <div style="flex-grow:1; min-width:0;">
                                 <h5 class="worker-name m-0" style="font-weight:800; color:#2c3e50; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${w.nameOrStore || "---"}</h5>
-                                <div class="worker-rating-pill" style="display:inline-block; color:#f39c12; font-weight:700; font-size:13px;">
-                                    <i class="fa-solid fa-star"></i> ${w.displayRating.toFixed(1)}
-                                </div>
+                                ${w.reviewCount > 0 ? `<div class="worker-rating-pill" style="display:inline-block; color:#f39c12; font-weight:700; font-size:13px;"><i class="fa-solid fa-star"></i> ${w.displayRating.toFixed(1)}</div>` : ''}
                             </div>
                         </div>
                         
@@ -875,6 +890,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         checkUnread();
         setInterval(checkUnread, 30000);
+
+        // Cho phép các trang khác gọi cập nhật badge ngay lập tức
+        window.refreshNotifBadge = checkUnread;
     })();
     // === AUTO-RESTORE SEARCH RESULTS ===
     // When returning from worker-detail.html with ?restoreSearch=true,

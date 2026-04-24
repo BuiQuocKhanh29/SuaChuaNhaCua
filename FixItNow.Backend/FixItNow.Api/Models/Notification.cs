@@ -10,5 +10,5 @@ public class Notification
     public string Type { get; set; } = string.Empty; // e.g., "new_request", "accepted", "status_update"
     public int? RelatedRequestId { get; set; }
     public bool IsRead { get; set; } = false;
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime();
 }

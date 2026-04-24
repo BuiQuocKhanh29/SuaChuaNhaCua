@@ -35,7 +35,7 @@ public class AuthController : ControllerBase
             Phone = dto.Phone,
             PasswordHash = dto.Password, // Simply storing clear text for now as per plan context
             Role = role,
-            CreatedAt = DateTime.Now
+            CreatedAt = FixItNow.Api.Helpers.DateTimeHelper.GetVietnamTime()
         };
 
         if (role == UserRole.Worker)

@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         // Tạo giao diện Modal Đăng nhập (thay thế alert xấu)
         const overlay = document.createElement("div");
-        overlay.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 99999; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease;";
+        overlay.style.cssText = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 99999; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease;";
         
         const modal = document.createElement("div");
         modal.style.cssText = "background: white; padding: 40px; border-radius: 24px; text-align: center; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); transform: translateY(30px); transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);";
@@ -312,14 +312,14 @@ document.addEventListener("DOMContentLoaded", async function () {
             document.getElementById("provinceSelectError").textContent = "Tỉnh/Thành phố không được bỏ trống, vui lòng chọn lại";
             hasError = true;
         }
-        if (!district) {
-            document.getElementById("districtSelect").classList.add("is-invalid");
-            document.getElementById("districtSelectError").textContent = "Quận/Huyện không được bỏ trống, vui lòng chọn lại";
-            hasError = true;
-        }
-        if (!detail) {
+        const getMeaningfulLength = (str) => {
+            const matches = str.match(/[\p{L}\p{N}]/gu);
+            return matches ? matches.length : 0;
+        };
+
+        if (!detail || getMeaningfulLength(detail) < 2) {
             document.getElementById("addressDetail").classList.add("is-invalid");
-            document.getElementById("addressDetailError").textContent = "Địa chỉ không được bỏ trống, vui lòng nhập lại.";
+            document.getElementById("addressDetailError").textContent = "Địa chỉ không hợp lệ, vui lòng nhập ít nhất 2 chữ hoặc số.";
             hasError = true;
         }
         if (!category) {
@@ -335,12 +335,20 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (district) fullAddress += ", " + district;
         fullAddress += ", " + province;
 
+        const descriptionVal = document.getElementById("description").value.trim();
+        if (descriptionVal !== "" && getMeaningfulLength(descriptionVal) < 3) {
+            document.getElementById("description").classList.add("is-invalid");
+            const errEl = document.getElementById("descriptionError");
+            if(errEl) errEl.textContent = "Mô tả nếu có, xin vui lòng nhập ít nhất 3 ký tự hợp lệ.";
+            hasError = true;
+        }
+
         const basePayload = {
             customerName: customerName,
             customerPhone: customerPhone,
             address: fullAddress,
             category: category,
-            description: document.getElementById("description").value.trim()
+            description: descriptionVal
         };
 
         // Validate Họ Tên (chỉ được phép sử dụng chữ cái và khoảng trắng)
@@ -367,7 +375,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (checkRes.ok) {
                 const workersData = await checkRes.json();
                 if (!workersData || workersData.length === 0) {
-                    showModal("Hiện tại chưa có thợ hỗ trợ dịch vụ này ở khu vực của bạn. Bạn có thể chọn danh mục/khu vực khác hoặc liên hệ hotline để được hỗ trợ ngoài!", "warning");
+                    showModal("Hiện tại chưa có thợ hỗ trợ dịch vụ này ở khu vực của bạn. Bạn có thể chọn danh mục/khu vực khác hoặc liên hệ hotline để được hỗ trợ ngoài!", "warning", { preventOutsideClick: true });
                     submitBtn.disabled = false;
                     submitBtn.textContent = "Gửi yêu cầu";
                     return;

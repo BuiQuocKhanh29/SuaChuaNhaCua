@@ -11,12 +11,14 @@ public class CreateRepairRequestDto
     public string CustomerPhone { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập địa chỉ")]
+    [RegularExpression(@"^(?=.*[\p{L}\p{N}]).*$", ErrorMessage = "Địa chỉ không hợp lệ, vui lòng nhập nội dung có ý nghĩa.")]
     public string Address { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng chọn danh mục")]
     public string Category { get; set; } = string.Empty;
 
-    public string Description { get; set; } = string.Empty;
+    [RegularExpression(@"^(?=.*[\p{L}\p{N}]).*$", ErrorMessage = "Mô tả không hợp lệ, vui lòng nhập nội dung có ý nghĩa (hoặc để trống).")]
+    public string? Description { get; set; } = string.Empty;
 
     // Single worker (backward-compatible, optional now)
     public int? WorkerId { get; set; }

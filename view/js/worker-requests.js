@@ -34,14 +34,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             allFetchedRequests = data;
             updateStats(data);
-            applyFilter();
+            applyFilter(true); // giữ nguyên số trang hiện tại khi auto-refresh
         } catch (error) {
             console.error(error);
             requestsList.innerHTML = '<div class="empty-icon"><i class="fas fa-exclamation-triangle" style="color:#e74c3c;"></i></div><div class="empty-text" style="color:#e74c3c;">Có lỗi xảy ra khi tải dữ liệu.</div>';
         }
     }
 
-    function applyFilter() {
+    // keepPage = true: giữ nguyên số trang (auto-refresh); false: reset về trang 1 (lọc)
+    function applyFilter(keepPage = false) {
         let filtered;
         const filterLabel = document.getElementById('filterLabel');
         const filterMap = {
@@ -64,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             card.classList.toggle('active', card.dataset.filter === activeFilter);
         });
 
-        currentPage = 1; // Reset to first page
+        if (!keepPage) currentPage = 1; // Chỉ reset trang khi người dùng đổi filter
         renderRequests(filtered);
     }
 
@@ -135,6 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span style="color: #aaa; font-size: 13px;">
                         <i class="fa-regular fa-clock me-1"></i>
                         <span class="time-ago" data-time="${req.createdAt}">${timeAgo(req.createdAt)}</span>
+                        <span class="ms-2" style="font-size:11.5px; opacity: 0.8;">(${new Date(req.createdAt).toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })})</span>
                     </span>
                     <div style="display: flex; gap: 10px;">
                         ${req.status === 0 ? `
@@ -358,6 +360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const error = await response.json();
                 if (typeof showModal !== 'undefined') showModal(error.message || 'Không thể chấp nhận yêu cầu.', 'error');
                 else alert(error.message || 'Lỗi chấp nhận yêu cầu');
+                fetchRequests(); // Tự refresh để ẩn đơn đã bị thợ khác nhận
             }
         } catch (error) {
             console.error(error);
